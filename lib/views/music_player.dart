@@ -1,4 +1,6 @@
 
+import 'dart:io';
+
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
@@ -20,44 +22,57 @@ class MusicPlayer extends StatefulWidget {
 
 class _MusicPlayerState extends State<MusicPlayer> {
   final player = AudioPlayer();
-  // 6RdyP9qnvPZguV09hdgy8g
   @override
   void dispose() {
     player.dispose();
     super.dispose();
   }
-  Music music = Music(trackId: '6RdyP9qnvPZguV09hdgy8g');
-  // 7MXVkk9YMctZqd1Srtv4MB
+
+  // For Testing Purpose i have used only 3 track id's you can increase more songs and track id's.
+  final List<String> trackList = [
+    '1Qt0OGUUPibpmk1FpFQ43m',
+    '7MXVkk9YMctZqd1Srtv4MB',
+    '6RdyP9qnvPZguV09hdgy8g'
+  ];
+  var index = 0;
+  late Music music;
+
   @override
   void initState() {
+    super.initState();
+    music = Music(trackId: trackList[index]);
+    loadTrackDetails();
+  }
+  Future<void> loadTrackDetails() async {
     final credentials = SpotifyApiCredentials(
         CustomStrings.clientId, CustomStrings.clientSecret);
+
+
     final spotify = SpotifyApi(credentials);
     spotify.tracks.get(music.trackId).then((track) async {
-      String? tempSongName = track.name;
-      if(tempSongName != null) {
-        music.songName = tempSongName;
-        music.artistName = track.artists?.first.name ?? "";
-        String? img = track.album?.images?.first.url;
-        if(img != null) {
-          music.songImage = img;
-          final tempSongColor = await getImagePalette(NetworkImage(img));
-          if(tempSongColor != null) {
-            music.songColor = tempSongColor;
-          }
-        }
-        music.artistImage = track.artists?.first.images?.first.url;
-        final yt = YoutubeExplode();
-        final video = (await yt.search.search("$tempSongName ${music.artistName?? ""}")).first;
-        final videoId = video.id.value;
-        music.duration = video.duration;
-        setState(() {});
-        var manifest = await yt.videos.streamsClient.getManifest(videoId);
-        var audioUrl = manifest.audioOnly.last.url;
-        player.play(UrlSource(audioUrl.toString()));
-      }
+    String? tempSongName = track.name;
+    if(tempSongName != null) {
+    music.songName = tempSongName;
+    music.artistName = track.artists?.first.name ?? "";
+    String? img = track.album?.images?.first.url;
+    if(img != null) {
+    music.songImage = img;
+    final tempSongColor = await getImagePalette(NetworkImage(img));
+    if(tempSongColor != null) {
+    music.songColor = tempSongColor;
+    }
+    }
+    music.artistImage = track.artists?.first.images?.first.url;
+    final yt = YoutubeExplode();
+    final video = (await yt.search.search("$tempSongName ${music.artistName?? ""}")).first;
+    final videoId = video.id.value;
+    music.duration = video.duration;
+    setState(() {});
+    var manifest = await yt.videos.streamsClient.getManifest(videoId);
+    var audioUrl = manifest.audioOnly.last.url;
+    player.play(UrlSource(audioUrl.toString()));
+    }
     });
-    super.initState();
   }
 
   Future<Color?> getImagePalette(ImageProvider imageProvider) async {
@@ -83,7 +98,10 @@ class _MusicPlayerState extends State<MusicPlayer> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.close, color: Colors.transparent),
+                  const Icon(
+                    Icons.close,
+                    color: Colors.transparent,
+                  ),
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -113,11 +131,14 @@ class _MusicPlayerState extends State<MusicPlayer> {
                       )
                     ],
                   ),
-                  const Icon(
-                    Icons.close,
-                    color: Colors.white,
-
-                  )
+                  IconButton(
+                    onPressed:() {
+                      exit(0);
+                    },
+                    icon: const Icon(
+                        Icons.close,
+                        color: Colors.white),
+                  ),
                 ],
               ),
               Expanded(
@@ -156,7 +177,7 @@ class _MusicPlayerState extends State<MusicPlayer> {
                         builder: (context, data){
                           return ProgressBar(
                             progress: data.data ?? const Duration(seconds: 0),
-                            total: music.duration ?? const Duration(minutes: 4),
+                            total: music.duration ?? const Duration(minutes: 0),
                             bufferedBarColor: Colors.white38,
                             baseBarColor: Colors.white12,
                             thumbColor: Colors.white,
@@ -174,15 +195,20 @@ class _MusicPlayerState extends State<MusicPlayer> {
                             onPressed: (){
                               Navigator.push(
                                   context, 
-                                  MaterialPageRoute(builder: (context) => LyricsPage(music: music, player: player,)));
+                                  MaterialPageRoute(builder: (context) => LyricsPage(music: music, player: player)));
                             },
                             icon: const Icon(Icons.lyrics_outlined,
                             color: Colors.white)
                         ),
                         IconButton(
-                            onPressed: (){}, 
+                            onPressed: (){
+                              index = (index - 1 + trackList.length) % trackList.length;
+                              music = Music(trackId: trackList[index]);
+                              loadTrackDetails();
+                            },
                             icon: const Icon(Icons.skip_previous,
                             color: Colors.white, size: 36)
+
                         ),
                         IconButton(
                             onPressed: () async {
@@ -195,12 +221,16 @@ class _MusicPlayerState extends State<MusicPlayer> {
                             },
                             icon: Icon(
                                 player.state==PlayerState.playing
-                                    ? Icons.play_circle
-                                    : Icons.pause_circle,
+                                    ? Icons.pause_circle
+                                    : Icons.play_circle,
                               color: Colors.white, size: 60)
                         ),
                         IconButton(
-                            onPressed: (){},
+                            onPressed: (){
+                              index = (index - 1 + trackList.length) % trackList.length;
+                              music = Music(trackId: trackList[index]);
+                              loadTrackDetails();
+                            },
                             icon: const Icon(Icons.skip_next,
                               color: Colors.white, size: 36)
                         ),

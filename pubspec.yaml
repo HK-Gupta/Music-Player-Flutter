@@ -41,8 +41,10 @@ dependencies:
   audioplayers: ^6.0.0
   palette_generator: ^0.3.3+3
   scrollable_positioned_list: ^0.3.8
+  flutter_dotenv: ^5.1.0
   http:
   intl:
+
 
 dev_dependencies:
   flutter_test:
